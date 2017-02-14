@@ -109,11 +109,11 @@
         
         if (self.textHColor) {
             
-            [btn setTitleColor:self.textHColor forState:UIControlStateNormal];
+            [btn setTitleColor:self.textHColor forState:UIControlStateSelected];
             
         }else {
             
-            [btn setTitleColor:[UIColor orangeColor] forState:UIControlStateNormal];
+            [btn setTitleColor:[UIColor orangeColor] forState:UIControlStateSelected];
             
         }
         
