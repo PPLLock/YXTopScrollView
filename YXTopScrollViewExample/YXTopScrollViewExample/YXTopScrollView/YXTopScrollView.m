@@ -9,6 +9,10 @@
 
 #define KdownLineCenterY self.bounds.size.height - 1.5
 
+#define KScreenHeight [UIScreen mainScreen].bounds.size.height
+
+#define KScreenWidth [UIScreen mainScreen].bounds.size.width
+
 @interface YXTopScrollView ()
 
 @property (strong, nonatomic) NSMutableArray * btnArr;
@@ -22,6 +26,7 @@
 @end
 
 @implementation YXTopScrollView
+static NSArray * items_;
 
 - (NSMutableArray *)btnArr
 {
@@ -42,71 +47,73 @@
     
     if (self) {
         
-        self.autoresizesSubviews = NO;
+        [self setupScrollView];
         
-        self.backgroundColor = [UIColor whiteColor];
-    
-        UIScrollView * scrollV = [[UIScrollView alloc]initWithFrame:self.bounds];
+        [self setupButtonsAndline];
         
-        scrollV.backgroundColor = [UIColor whiteColor];
-        
-        scrollV.showsVerticalScrollIndicator = NO;
-        
-        scrollV.showsHorizontalScrollIndicator = NO;
-        
-        scrollV.pagingEnabled = YES;
-        
-        scrollV.bounces = NO;
-        
-        [self addSubview:scrollV];
-        
-        self.boundScrollV = scrollV;
-    
     }
     
     return self;
 }
 
-- (void)setItems:(NSArray *)items
+- (void)setupScrollView
 {
-    _items = items;
+
+    self.backgroundColor = [UIColor whiteColor];
     
-    NSLog(@"items = %@",items);
+    UIScrollView * scrollV = [[UIScrollView alloc]initWithFrame:self.bounds];
+    
+    scrollV.backgroundColor = [UIColor whiteColor];
+    
+    scrollV.showsVerticalScrollIndicator = NO;
+    
+    scrollV.showsHorizontalScrollIndicator = NO;
+
+    scrollV.bounces = NO;
+    
+    scrollV.alwaysBounceVertical = NO;
+
+    
+    [self addSubview:scrollV];
+    
+    self.boundScrollV = scrollV;
+}
+
+- (void)setupButtonsAndline
+{
+    if (items_.count == 0) return;
     
     CGFloat margin = 20.0f;
     
     CGFloat btnH = self.lineHeight == 0?(self.bounds.size.height-1) : self.lineHeight;
+   
     
-    //CGFloat btnH = self.bounds.size.height-1;
-    
-    for (NSInteger i = 0; i < items.count; i ++) {
-    
+    for (NSInteger i = 0; i < items_.count; i ++) {
+        
         UIButton * btn = [UIButton buttonWithType:UIButtonTypeCustom];
         
         CGFloat btnX = 0+10;
         
         if (i != 0) {
-        
-           UIButton * preBtn = self.btnArr[i-1];
             
-           btnX = CGRectGetMaxX(preBtn.frame) + margin;
-        
+            UIButton * preBtn = self.btnArr[i-1];
+            
+            btnX = CGRectGetMaxX(preBtn.frame) + margin;
+            
         }
         
-        [btn setTitle:items[i] forState:UIControlStateNormal];
+        [btn setTitle:items_[i] forState:UIControlStateNormal];
         
         if (self.textNColor) {
-        
-             [btn setTitleColor:self.textNColor forState:UIControlStateNormal];
-        
+            
+            [btn setTitleColor:self.textNColor forState:UIControlStateNormal];
+            
         }else {
-        
-              [btn setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
-        
+            
+            [btn setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
+            
         }
-        
-//        [btn setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
-        
+
         if (self.textHColor) {
             
             [btn setTitleColor:self.textHColor forState:UIControlStateSelected];
@@ -117,13 +124,10 @@
             
         }
         
-//        [btn setTitleColor:[UIColor orangeColor] forState:UIControlStateSelected];
-        
-        [btn addTarget:self action:@selector(click:) forControlEvents:UIControlEventTouchUpInside];
+        [btn addTarget:self action:@selector(tagClick:) forControlEvents:UIControlEventTouchUpInside];
         
         btn.titleLabel.font = self.textFont == nil?([UIFont systemFontOfSize:14]): self.textFont;
-        
-        //btn.titleLabel.font = [UIFont systemFontOfSize:14];
+    
         
         NSMutableDictionary * fontDic = [NSMutableDictionary dictionary];
         
@@ -150,50 +154,80 @@
     UIButton * firstBtn = [self.btnArr firstObject];
     
     firstBtn.selected = YES;
-
+    
     downLine.frame = CGRectMake(firstBtn.frame.origin.x + 5, self.boundScrollV.frame.size.height - 1, firstBtn.frame.size.width-10, 1);
-    
-    //firstBtn.center = CGPointMake(firstBtn.center.x, KdownLineCenterY);
-    
+
     [self.boundScrollV addSubview:downLine];
     
     self.downLine = downLine;
     
     self.preBtn = firstBtn;
     
+    
+}
+
+- (void)tagClick:(UIButton *)btn
+{
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(click:) object:btn];
+    
+    [self performSelector:@selector(click:) withObject:btn afterDelay:0.26];
 }
 
 - (void)click:(UIButton *)btn
 {
-    if (btn.selected)  return;
     
-    
+    if (btn.selected) return;
     
     self.preBtn.selected = NO;
     
     btn.selected = !btn.selected;
     
     self.preBtn = btn;
- 
+    
     [UIView animateWithDuration:0.25 animations:^{
         
         NSInteger index = [self.btnArr indexOfObject:btn];
         
-        if (index >= 3 && index != self.btnArr.count -1) {
-        
+        if (index >= 3 && index != self.btnArr.count - 1) {
+            
             [self.boundScrollV setContentOffset:CGPointMake(btn.center.x - self.bounds.size.width * 0.5, 0) animated:YES];
-        
+            
+        }else if (index < 3) {
+            
+            [self.boundScrollV setContentOffset:CGPointMake(0, 0) animated:YES];
+            
+            //控制最后一个按钮的位置
+        }else if (index == self.btnArr.count -1 && ((self.boundScrollV.contentOffset.x + KScreenWidth) < self.boundScrollV.contentSize.width)) {
+            
+            CGFloat offsetX = self.boundScrollV.contentOffset.x + btn.bounds.size.width;
+            
+            [self.boundScrollV setContentOffset:CGPointMake(offsetX, 0) animated:YES];
+            
         }
+        
+        NSLog(@"x = %f,size = %f,btn.w = %f",self.boundScrollV.contentOffset.x,self.boundScrollV.contentSize.width,btn.frame.size.width);
         
         self.downLine.frame = CGRectMake(btn.frame.origin.x+5, self.boundScrollV.frame.size.height - 1, btn.frame.size.width-10, 3);
         
     }];
     
     if (self.btnClick) {
-    
+        
         self.btnClick(btn.titleLabel.text);
-    
+        
     }
+}
+
++ (instancetype)initWithOriginY:(CGFloat)y height:(CGFloat)h forItems:(NSArray *)items
+{
+    items_ = items;
+    
+    CGRect frame = CGRectMake(0, y,KScreenWidth, h);
+    
+    YXTopScrollView * yxTopV = [[YXTopScrollView alloc]initWithFrame:frame];
+    
+    return yxTopV;
+    
 }
 
 

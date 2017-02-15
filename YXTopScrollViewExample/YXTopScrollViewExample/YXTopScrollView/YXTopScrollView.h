@@ -39,4 +39,7 @@
  */
 @property (strong, nonatomic) UIColor * textHColor;
 
++ (instancetype)initWithOriginY:(CGFloat)y height:(CGFloat)h forItems:(NSArray *)items;
+
+
 @end
